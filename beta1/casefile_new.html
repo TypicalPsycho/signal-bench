@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SignalBench beta | Casefile Setup</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon/favicon-16x16.png" />
+  <link rel="apple-touch-icon" href="icons/favicon/apple-touch-icon.png" />
+  <link rel="manifest" href="icons/favicon/site.webmanifest" />
+  <link rel="stylesheet" href="ui_shell.css" />
+  <script src="ui_theme.js"></script>
+  <script src="ui_store.js"></script>
+</head>
+<body>
+  <!--
+    Integration Notes (Casefile Setup)
+    - Create casefile: company, role, optional URL
+    - Create U03: JD raw (file or text)
+    - Save context flags: applied? interviewed?
+    - Route to /app (with casefile id)
+  -->
+  <div class="wrap">
+    <div class="page">
+                  <header class="page-header">
+        <div class="brand large">
+          <div class="brand-menu">
+            <button class="brand-logo" type="button" aria-label="Open navigation">
+              <img src="icons/logo1_round_80.png" alt="SignalBench logo" />
+            </button>
+            <div class="brand-panel" role="menu">
+
+          <a href="landing.html" role="menuitem">Landing</a>
+          <a href="auth.html" role="menuitem">Auth</a>
+          <a href="onboarding.html" role="menuitem">Onboarding</a>
+          <a href="casefile_new.html" role="menuitem">Casefile Setup</a>
+          <a href="app.html" role="menuitem">App</a>
+          <a href="settings.html" role="menuitem">Settings</a>
+          <a href="feedback.html" role="menuitem">Feedback</a>
+            </div>
+          </div>
+          <span class="brand-name">SignalBench</span>
+        </div>
+      </header>
+
+      <main class="page-body">
+        <section class="card">
+          <h1 class="title">Create your first Casefile</h1>
+          <p class="subtitle">
+            SignalBench evaluates opportunities one role at a time. Each casefile is anchored in a specific job description
+            and company context, then strengthened as evidence, insights, and outcomes are added.
+            <br /><br />
+            To begin, upload the job description by attaching the file or pasting the text below. You’ll also provide a few
+            details about the role and company to give the system proper context.
+          </p>
+        </section>
+
+        <section class="card">
+          <div class="row">
+            <label class="field" style="flex:1">
+              <span>Company name</span>
+              <input id="companyName" type="text" maxlength="20" placeholder="Company name" required />
+            </label>
+            <label class="field" style="flex:1">
+              <span>Job title</span>
+              <input id="jobTitle" type="text" maxlength="20" placeholder="Job title" required />
+            </label>
+          </div>
+          <label class="field" style="margin-top:12px;">
+            <span>Company URL (optional, helps with company research)</span>
+            <input type="url" placeholder="https://company.com" />
+          </label>
+
+          <div style="margin-top:14px;">
+            <label class="field">
+              <span>Upload job description (required)</span>
+              <input id="jdFile" type="file" />
+            </label>
+            <div class="note" style="margin:8px 0;">OR</div>
+            <label class="field">
+              <span>Paste job description text</span>
+              <textarea id="jdText" placeholder="Paste JD text here"></textarea>
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 class="title" style="font-size:22px;">Casefile context</h2>
+          <p class="subtitle">These settings help SignalBench understand your progress so far.</p>
+          <div class="field" style="margin-top:10px;">
+            <span>Have you applied for the role yet?</span>
+            <div class="row" style="flex-direction:column; margin-top:6px;">
+              <label class="pill"><input type="radio" name="applied" value="yes" /> Yes</label>
+              <label class="pill"><input type="radio" name="applied" value="no" /> No</label>
+            </div>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <span>Have you interviewed for the role yet?</span>
+            <div class="row" style="flex-direction:column; margin-top:6px;">
+              <label class="pill"><input type="radio" name="interviewed" value="yes" /> Yes</label>
+              <label class="pill"><input type="radio" name="interviewed" value="no" /> No</label>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="row">
+            <button class="btn primary" id="btnCreateCasefile" type="button" disabled>Create Casefile</button>
+            <button class="btn" id="btnSkipCasefile" type="button">Skip Casefile Creation</button>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const companyName = document.getElementById("companyName");
+    const jobTitle = document.getElementById("jobTitle");
+    const jdFile = document.getElementById("jdFile");
+    const jdText = document.getElementById("jdText");
+    const btnCreate = document.getElementById("btnCreateCasefile");
+    const btnSkip = document.getElementById("btnSkipCasefile");
+
+    const hasJD = () => {
+      return (jdFile.files && jdFile.files.length > 0) || jdText.value.trim().length > 0;
+    };
+
+    const updateState = () => {
+      const ok = companyName.value.trim().length > 0
+        && jobTitle.value.trim().length > 0
+        && hasJD();
+      btnCreate.disabled = !ok;
+    };
+
+    [companyName, jobTitle, jdFile, jdText].forEach((el) => {
+      el.addEventListener("input", updateState);
+      el.addEventListener("change", updateState);
+    });
+
+    btnCreate.addEventListener("click", () => {
+      const store = UIStore.load();
+      const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+      const cf = {
+        id,
+        role: jobTitle.value.trim(),
+        company: companyName.value.trim(),
+        stage: "screen",
+        companyUrl: document.querySelector("input[type='url']").value.trim()
+      };
+      store.casefiles = store.casefiles || [];
+      store.casefiles.push(cf);
+      store.activeCaseId = id;
+      store.u03 = store.u03 || {};
+      store.u03[id] = {
+        jdText: jdText.value.trim(),
+        createdAt: new Date().toISOString(),
+        applied: document.querySelector("input[name='applied']:checked")?.value || "",
+        interviewed: document.querySelector("input[name='interviewed']:checked")?.value || ""
+      };
+      UIStore.save(store);
+      window.location.href = "app.html";
+    });
+    btnSkip.addEventListener("click", () => {
+      window.location.href = "app.html";
+    });
+  </script>
+
+
+  <script>
+    document.querySelectorAll(".brand-menu").forEach((menu) => {
+      const trigger = menu.querySelector(".brand-logo");
+      if (!trigger) return;
+      trigger.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        menu.classList.toggle("open");
+      });
+    });
+    document.addEventListener("click", (e) => {
+      document.querySelectorAll(".brand-menu.open").forEach((menu) => {
+        if (!menu.contains(e.target)) menu.classList.remove("open");
+      });
+    });
+  </script>
+</body>
+</html>
+
